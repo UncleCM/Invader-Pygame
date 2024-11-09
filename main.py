@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import List, Tuple, Optional
 import sys
 from game_controller import add_controls
+from constants import Entity, PLAYER_SPEED, BULLET_SPEED, SHOOT_COOLDOWN
 
 # Initialize Pygame
 pygame.init()
@@ -12,10 +13,7 @@ pygame.init()
 # Constants
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
-PLAYER_SPEED = 200
-BULLET_SPEED = 400
 ALIEN_SPEED = 50
-SHOOT_COOLDOWN = 0.1
 ALIEN_SHOOT_COOLDOWN = 6.0
 SHOOT_CHANCE = 0.005
 COLLISION_RADIUS = 24
@@ -39,16 +37,6 @@ GAME_OVER = "game_over"
 PLAYER_ALIEN_SCALE = 2.0
 BULLET_SCALE = 3.0
 ALIEN_PROJECTILE_SCALE = 3.0
-
-@dataclass
-class Entity:
-    x: float
-    y: float
-    width: int
-    height: int
-    velocity_x: float = 0
-    velocity_y: float = 0
-    dead: bool = False
 
 @dataclass
 class Star:

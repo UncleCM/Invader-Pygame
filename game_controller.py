@@ -1,7 +1,7 @@
 from typing import Type
 from gyro_controller import GyroController
 from button_controller import ButtonController
-from main import Entity, SHOOT_COOLDOWN, BULLET_SPEED
+from constants import Entity, SHOOT_COOLDOWN, BULLET_SPEED, PLAYER_SPEED
 
 def add_controls(game_class: Type) -> Type:
     """
@@ -41,7 +41,6 @@ def add_controls(game_class: Type) -> Type:
     def new_handle_input(self):
         # Handle movement
         if hasattr(self, 'using_gyro') and self.using_gyro:
-            from main import PLAYER_SPEED
             self.player.velocity_x = self.gyro.get_rotation(PLAYER_SPEED)
         else:
             # Fall back to original keyboard controls for movement
