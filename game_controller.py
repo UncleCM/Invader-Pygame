@@ -30,6 +30,7 @@ def add_controls(game_class: Type) -> Type:
         try:
             self.button = ButtonController()
             self.using_button = True
+            self.last_button_state = False  # Track previous button state
             print("Button controller initialized successfully!")
         except Exception as e:
             print(f"Failed to initialize button: {e}")
@@ -48,7 +49,10 @@ def add_controls(game_class: Type) -> Type:
         
         # Handle shooting
         if hasattr(self, 'using_button') and self.using_button:
-            if self.button.is_pressed() and self.shoot_timer <= 0:
+            current_button_state = self.button.is_pressed()
+            
+            # Only shoot on button press (transition from not pressed to pressed)
+            if current_button_state and not self.last_button_state and self.shoot_timer <= 0:
                 self.shoot_timer = SHOOT_COOLDOWN
                 bullet = Entity(
                     self.player.x + self.player.width // 2 - self.bullet_img.get_width() // 2,
@@ -59,6 +63,9 @@ def add_controls(game_class: Type) -> Type:
                     -BULLET_SPEED
                 )
                 self.bullets.append(bullet)
+            
+            # Update button state
+            self.last_button_state = current_button_state
     
     def cleanup(self):
         """Clean up GPIO resources"""
