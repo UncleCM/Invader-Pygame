@@ -28,8 +28,10 @@ def add_gyro_controls(game_class: Type) -> Type:
     
     def new_handle_input(self):
         if hasattr(self, 'using_gyro') and self.using_gyro:
-            # Get rotation from gyroscope, using the class's PLAYER_SPEED constant
-            self.player.velocity_x = self.gyro.get_rotation(self.PLAYER_SPEED)
+            # Import PLAYER_SPEED from main module
+            from main import PLAYER_SPEED
+            # Get rotation from gyroscope
+            self.player.velocity_x = self.gyro.get_rotation(PLAYER_SPEED)
         else:
             # Fall back to original keyboard controls
             original_handle_input(self)

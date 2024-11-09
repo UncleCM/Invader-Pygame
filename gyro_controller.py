@@ -2,6 +2,7 @@ import smbus
 import time
 from typing import Tuple
 
+
 class GyroController:
     # MPU6050 Registers and their Address
     POWER_MGMT_1 = 0x6B
