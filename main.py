@@ -29,10 +29,15 @@ STAR_COLORS = [(100, 100, 100), (150, 150, 150), (255, 255, 255)]
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 
+# Game States
+MENU = "menu"
+PLAYING = "playing"
+GAME_OVER = "game_over"
+
 # Sprite scale factors
 PLAYER_ALIEN_SCALE = 2.0
-BULLET_SCALE = 3.0  # Increased from default
-ALIEN_PROJECTILE_SCALE = 3.0  # Increased from default
+BULLET_SCALE = 3.0
+ALIEN_PROJECTILE_SCALE = 3.0
 
 @dataclass
 class Entity:
@@ -82,12 +87,17 @@ class Game:
         # Initialize stars
         self.stars = self.create_stars()
         
-        # Game state
-        self.reset_game()
+        # Initialize game state
+        self.game_state = MENU
+        self.selected_option = 0
+        self.menu_options = ["Start Game", "Quit"]
         
         # Clock for controlling frame rate
         self.clock = pygame.time.Clock()
         self.delta_time = 0
+        
+        # Initialize game components
+        self.reset_game()
         
     def create_stars(self) -> List[Star]:
         stars = []
@@ -125,9 +135,48 @@ class Game:
         self.alien_projectiles: List[Entity] = []
         self.shoot_timer = 0
         self.score = 0
-        self.game_over = False
         self.spawn_aliens()
+
+    def handle_menu_input(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_w:
+                self.selected_option = (self.selected_option - 1) % len(self.menu_options)
+            elif event.key == pygame.K_s:
+                self.selected_option = (self.selected_option + 1) % len(self.menu_options)
+            elif event.key == pygame.K_RETURN:
+                if self.selected_option == 0:  # Start Game
+                    self.game_state = PLAYING
+                    self.reset_game()
+                elif self.selected_option == 1:  # Quit
+                    pygame.quit()
+                    sys.exit()
+
+    def draw_menu(self):
+        self.screen.fill((0, 0, 0))
+        self.draw_stars()
         
+        # Draw title
+        title_font = pygame.font.Font(None, 74)
+        title_text = title_font.render("SPACE INVADERS", True, WHITE)
+        title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 3))
+        self.screen.blit(title_text, title_rect)
+        
+        # Draw menu options
+        menu_font = pygame.font.Font(None, 48)
+        for i, option in enumerate(self.menu_options):
+            color = RED if i == self.selected_option else WHITE
+            text = menu_font.render(option, True, color)
+            rect = text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + i * 60))
+            self.screen.blit(text, rect)
+            
+        # Draw instructions
+        inst_font = pygame.font.Font(None, 36)
+        inst_text = inst_font.render("Use A/D keys to select, Enter to confirm", True, WHITE)
+        inst_rect = inst_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT * 0.8))
+        self.screen.blit(inst_text, inst_rect)
+        
+        pygame.display.flip()
+
     def spawn_aliens(self):
         self.aliens.clear()
         
@@ -164,7 +213,6 @@ class Game:
         # Shooting
         if keys[pygame.K_SPACE] and self.shoot_timer <= 0:
             self.shoot_timer = SHOOT_COOLDOWN
-            # Spawn bullet from center of player
             bullet = Entity(
                 self.player.x + self.player.width // 2 - self.bullet_img.get_width() // 2,
                 self.player.y,
@@ -177,14 +225,9 @@ class Game:
             
     def update(self):
         self.delta_time = self.clock.tick(60) / 1000.0
-        
-        # Update stars regardless of game state
         self.update_stars()
         
-        if self.game_over:
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_SPACE]:
-                self.reset_game()
+        if self.game_state != PLAYING:
             return
             
         # Update timers
@@ -192,7 +235,6 @@ class Game:
         
         # Update player position
         self.player.x += self.player.velocity_x * self.delta_time
-        # Keep player within screen bounds
         self.player.x = max(0, min(WINDOW_WIDTH - self.player.width, self.player.x))
         
         # Update bullets
@@ -208,11 +250,10 @@ class Game:
                 self.alien_projectiles.remove(proj)
                 
             if self.check_collision(proj, self.player):
-                self.game_over = True
+                self.game_state = GAME_OVER
                 
         # Update aliens
         for alien in self.aliens[:]:
-            # Calculate direction to player's center
             player_center_x = self.player.x + self.player.width // 2
             player_center_y = self.player.y + self.player.height // 2
             alien_center_x = alien.x + alien.width // 2
@@ -246,7 +287,7 @@ class Game:
                 self.alien_projectiles.append(projectile)
                 
             if self.check_collision(alien, self.player):
-                self.game_over = True
+                self.game_state = GAME_OVER
                 
         # Check bullet collisions with aliens
         for bullet in self.bullets[:]:
@@ -263,7 +304,6 @@ class Game:
             self.spawn_aliens()
             
     def check_collision(self, entity1: Entity, entity2: Entity) -> bool:
-        # Calculate centers of entities
         center1_x = entity1.x + entity1.width // 2
         center1_y = entity1.y + entity1.height // 2
         center2_x = entity2.x + entity2.width // 2
@@ -274,24 +314,19 @@ class Game:
         distance = math.sqrt(dx * dx + dy * dy)
         return distance < COLLISION_RADIUS
         
-    def draw(self):
+    def draw_game(self):
         self.screen.fill((0, 0, 0))
-        
-        # Draw stars first (background)
         self.draw_stars()
         
-        # Draw player
+        # Draw game elements
         self.screen.blit(self.player_img, (self.player.x, self.player.y))
         
-        # Draw aliens
         for alien in self.aliens:
             self.screen.blit(self.alien_img, (alien.x, alien.y))
         
-        # Draw bullets
         for bullet in self.bullets:
             self.screen.blit(self.bullet_img, (bullet.x, bullet.y))
         
-        # Draw alien projectiles
         for proj in self.alien_projectiles:
             self.screen.blit(self.alien_projectile_img, (proj.x, proj.y))
         
@@ -300,20 +335,36 @@ class Game:
         score_text = font.render(f"Score: {self.score}", True, WHITE)
         self.screen.blit(score_text, (10, 10))
         
-        # Draw game over screen
-        if self.game_over:
-            font = pygame.font.Font(None, 74)
-            game_over_text = font.render("Game Over!", True, RED)
-            restart_text = font.render("Press SPACE to restart", True, WHITE)
-            
-            self.screen.blit(game_over_text,
-                           (WINDOW_WIDTH//2 - game_over_text.get_width()//2,
-                            WINDOW_HEIGHT//2 - 50))
-            self.screen.blit(restart_text,
-                           (WINDOW_WIDTH//2 - restart_text.get_width()//2,
-                            WINDOW_HEIGHT//2 + 50))
+        pygame.display.flip()
+
+    def draw_game_over(self):
+        # Keep the game screen visible but add overlay
+        font = pygame.font.Font(None, 74)
+        game_over_text = font.render("Game Over!", True, RED)
+        score_text = font.render(f"Final Score: {self.score}", True, WHITE)
+        restart_text = font.render("Press SPACE for Menu", True, WHITE)
+        
+        self.screen.blit(game_over_text,
+                       (WINDOW_WIDTH//2 - game_over_text.get_width()//2,
+                        WINDOW_HEIGHT//2 - 100))
+        self.screen.blit(score_text,
+                       (WINDOW_WIDTH//2 - score_text.get_width()//2,
+                        WINDOW_HEIGHT//2))
+        self.screen.blit(restart_text,
+                       (WINDOW_WIDTH//2 - restart_text.get_width()//2,
+                        WINDOW_HEIGHT//2 + 100))
         
         pygame.display.flip()
+        
+    # [Previous code remains the same until the draw function]
+
+    def draw(self):
+        if self.game_state == MENU:
+            self.draw_menu()
+        elif self.game_state == PLAYING:
+            self.draw_game()
+        elif self.game_state == GAME_OVER:
+            self.draw_game_over()
         
     def run(self):
         running = True
@@ -322,6 +373,12 @@ class Game:
                 if event.type == pygame.QUIT:
                     running = False
                     
+                if self.game_state == MENU:
+                    self.handle_menu_input(event)
+                elif self.game_state == GAME_OVER:
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                        self.game_state = MENU
+            
             self.handle_input()
             self.update()
             self.draw()
@@ -329,6 +386,9 @@ class Game:
         pygame.quit()
         sys.exit()
 
+if __name__ == "__main__":
+    game = Game()
+    game.run()
 if __name__ == "__main__":
     game = Game()
     game.run()
