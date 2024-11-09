@@ -4,17 +4,16 @@ import math
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 import sys
-
+from game_controller import add_controls
+from constants import Entity, PLAYER_SPEED, BULLET_SPEED, SHOOT_COOLDOWN
+from sound_controller import SoundController
 # Initialize Pygame
 pygame.init()
 
 # Constants
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
-PLAYER_SPEED = 200
-BULLET_SPEED = 400
 ALIEN_SPEED = 50
-SHOOT_COOLDOWN = 0.1
 ALIEN_SHOOT_COOLDOWN = 6.0
 SHOOT_CHANCE = 0.005
 COLLISION_RADIUS = 24
@@ -38,16 +37,6 @@ GAME_OVER = "game_over"
 PLAYER_ALIEN_SCALE = 2.0
 BULLET_SCALE = 3.0
 ALIEN_PROJECTILE_SCALE = 3.0
-
-@dataclass
-class Entity:
-    x: float
-    y: float
-    width: int
-    height: int
-    velocity_x: float = 0
-    velocity_y: float = 0
-    dead: bool = False
 
 @dataclass
 class Star:
@@ -95,7 +84,7 @@ class Game:
         # Clock for controlling frame rate
         self.clock = pygame.time.Clock()
         self.delta_time = 0
-        
+        self.sound = SoundController()
         # Initialize game components
         self.reset_game()
         
@@ -171,7 +160,7 @@ class Game:
             
         # Draw instructions
         inst_font = pygame.font.Font(None, 36)
-        inst_text = inst_font.render("Use A/D keys to select, Enter to confirm", True, WHITE)
+        inst_text = inst_font.render("Use W/S keys to select, Enter to confirm", True, WHITE)
         inst_rect = inst_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT * 0.8))
         self.screen.blit(inst_text, inst_rect)
         
@@ -251,6 +240,7 @@ class Game:
                 
             if self.check_collision(proj, self.player):
                 self.game_state = GAME_OVER
+                self.sound.play_game_over()
                 
         # Update aliens
         for alien in self.aliens[:]:
@@ -288,6 +278,7 @@ class Game:
                 
             if self.check_collision(alien, self.player):
                 self.game_state = GAME_OVER
+                self.sound.play_game_over()
                 
         # Check bullet collisions with aliens
         for bullet in self.bullets[:]:
@@ -298,6 +289,7 @@ class Game:
                     if alien in self.aliens:
                         self.aliens.remove(alien)
                         self.score += 1
+                        self.sound.play_explosion()
                         break
                         
         if not self.aliens:
@@ -387,8 +379,6 @@ class Game:
         sys.exit()
 
 if __name__ == "__main__":
-    game = Game()
-    game.run()
-if __name__ == "__main__":
+    Game = add_controls(Game)  # Apply gyro controls
     game = Game()
     game.run()
