@@ -6,7 +6,7 @@ from typing import List, Tuple, Optional
 import sys
 from game_controller import add_controls
 from constants import Entity, PLAYER_SPEED, BULLET_SPEED, SHOOT_COOLDOWN
-
+from sound_controller import SoundController
 # Initialize Pygame
 pygame.init()
 
@@ -84,7 +84,7 @@ class Game:
         # Clock for controlling frame rate
         self.clock = pygame.time.Clock()
         self.delta_time = 0
-        
+        self.sound = SoundController()
         # Initialize game components
         self.reset_game()
         
@@ -240,6 +240,7 @@ class Game:
                 
             if self.check_collision(proj, self.player):
                 self.game_state = GAME_OVER
+                self.sound.play_game_over()
                 
         # Update aliens
         for alien in self.aliens[:]:
@@ -277,6 +278,7 @@ class Game:
                 
             if self.check_collision(alien, self.player):
                 self.game_state = GAME_OVER
+                self.sound.play_game_over()
                 
         # Check bullet collisions with aliens
         for bullet in self.bullets[:]:
@@ -287,6 +289,7 @@ class Game:
                     if alien in self.aliens:
                         self.aliens.remove(alien)
                         self.score += 1
+                        self.sound.play_explosion()
                         break
                         
         if not self.aliens:

@@ -92,6 +92,7 @@ def add_controls(game_class: Type) -> Type:
             -BULLET_SPEED
         )
         self.bullets.append(bullet)
+        self.sound.play_shoot()
     
     def cleanup(self):
         """Clean up GPIO resources"""
