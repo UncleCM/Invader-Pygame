@@ -4,6 +4,7 @@ import math
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 import sys
+from game_controller import add_gyro_controls
 
 # Initialize Pygame
 pygame.init()
@@ -387,8 +388,6 @@ class Game:
         sys.exit()
 
 if __name__ == "__main__":
-    game = Game()
-    game.run()
-if __name__ == "__main__":
+    Game = add_gyro_controls(Game)  # Apply gyro controls
     game = Game()
     game.run()
