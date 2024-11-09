@@ -1,6 +1,7 @@
 import smbus
 import time
 from typing import Tuple
+from mpu6050 import mpu6050
 
 
 class GyroController:

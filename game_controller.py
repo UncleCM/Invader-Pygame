@@ -2,6 +2,7 @@ from typing import Type
 from gyro_controller import GyroController
 from button_controller import ButtonController
 from constants import Entity, SHOOT_COOLDOWN, BULLET_SPEED, PLAYER_SPEED
+import pygame
 
 def add_controls(game_class: Type) -> Type:
     """
@@ -40,26 +41,32 @@ def add_controls(game_class: Type) -> Type:
     original_handle_input = game_class.handle_input
     
     def new_handle_input(self):
-        # First handle original input for non-gyro/button controls
-        if not hasattr(self, 'using_gyro') or not self.using_gyro:
-            original_handle_input(self)
-        
-        # Then handle gyro movement if available
+        # Handle movement - try gyro first, fall back to keyboard
         if hasattr(self, 'using_gyro') and self.using_gyro:
-            self.player.velocity_x = self.gyro.get_rotation(PLAYER_SPEED)
+            try:
+                self.player.velocity_x = self.gyro.get_rotation(PLAYER_SPEED)
+            except Exception as e:
+                print(f"Error reading gyroscope: {e}")
+                self.using_gyro = False
+                # Fall back to keyboard controls for this frame
+                original_handle_input(self)
+        else:
+            # Use keyboard controls if no gyro
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_a]:
+                self.player.velocity_x = -PLAYER_SPEED
+            elif keys[pygame.K_d]:
+                self.player.velocity_x = PLAYER_SPEED
+            else:
+                self.player.velocity_x = 0
         
-        # Handle button shooting
+        # Handle shooting - try button first, fall back to keyboard
         if hasattr(self, 'using_button') and self.using_button:
             try:
                 current_button_state = self.button.is_pressed()
                 
-                # Debug print to check button state
-                if current_button_state:
-                    print("Button pressed!")
-                
                 # Shoot only on button press (not hold)
                 if current_button_state and not self.last_button_state and self.shoot_timer <= 0:
-                    print("Shooting!")
                     self.shoot_timer = SHOOT_COOLDOWN
                     bullet = Entity(
                         self.player.x + self.player.width // 2 - self.bullet_img.get_width() // 2,
@@ -75,7 +82,31 @@ def add_controls(game_class: Type) -> Type:
             except Exception as e:
                 print(f"Error reading button: {e}")
                 self.using_button = False
-                print("Falling back to keyboard controls for shooting")
+                # Fall back to keyboard controls for this frame
+                if pygame.key.get_pressed()[pygame.K_SPACE] and self.shoot_timer <= 0:
+                    self.shoot_timer = SHOOT_COOLDOWN
+                    bullet = Entity(
+                        self.player.x + self.player.width // 2 - self.bullet_img.get_width() // 2,
+                        self.player.y,
+                        self.bullet_img.get_width(),
+                        self.bullet_img.get_height(),
+                        0,
+                        -BULLET_SPEED
+                    )
+                    self.bullets.append(bullet)
+        else:
+            # Use keyboard controls if no button
+            if pygame.key.get_pressed()[pygame.K_SPACE] and self.shoot_timer <= 0:
+                self.shoot_timer = SHOOT_COOLDOWN
+                bullet = Entity(
+                    self.player.x + self.player.width // 2 - self.bullet_img.get_width() // 2,
+                    self.player.y,
+                    self.bullet_img.get_width(),
+                    self.bullet_img.get_height(),
+                    0,
+                    -BULLET_SPEED
+                )
+                self.bullets.append(bullet)
     
     def cleanup(self):
         """Clean up GPIO resources"""

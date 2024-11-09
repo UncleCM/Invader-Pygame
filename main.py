@@ -160,7 +160,7 @@ class Game:
             
         # Draw instructions
         inst_font = pygame.font.Font(None, 36)
-        inst_text = inst_font.render("Use A/D keys to select, Enter to confirm", True, WHITE)
+        inst_text = inst_font.render("Use W/S keys to select, Enter to confirm", True, WHITE)
         inst_rect = inst_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT * 0.8))
         self.screen.blit(inst_text, inst_rect)
         
